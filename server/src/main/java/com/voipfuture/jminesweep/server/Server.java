@@ -23,12 +23,9 @@ public class Server
             final Socket clientSocket = socket.accept();
             try ( var out = clientSocket.getOutputStream() ) {
                 out.write( NetworkPacketType.SCREEN_CONTENT.id );
-                GameField field = new GameField(10, 10, Difficulty.MEDIUM);
-                StringBuilder builder = new StringBuilder();
-                for (int y = 0; y < 10; y++) {
-                    builder.append(Arrays.toString(field.field).replaceAll("\\[","").replaceAll("\\]", "").replaceAll("\\,", "").replaceAll(" ", "").substring(y*10, (y*10)+10)).append("\n");
-                }
-                final byte[] screenContent = builder.toString().getBytes(StandardCharsets.UTF_8);
+                GameField field = new GameField(10, 10, Difficulty.EASY);
+                field.revealTile(0,0);
+                final byte[] screenContent = field.getFieldAsString().getBytes(StandardCharsets.UTF_8);
                 out.write( Utils.intToNet( screenContent.length ) );
                 out.write( screenContent );
             }

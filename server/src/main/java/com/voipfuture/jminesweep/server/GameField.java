@@ -1,5 +1,6 @@
 package com.voipfuture.jminesweep.server;
 
+import java.util.Arrays;
 import java.util.Random;
 import com.voipfuture.jminesweep.shared.Difficulty;
 
@@ -13,7 +14,10 @@ public class GameField {
     static class Tile {
         private boolean isBomb = false;
         public boolean isHidden = true;
+        public boolean isMarked = false;
         public int surroundingBombs = 0;
+        public int x;
+        public int y;
         public int hasBomb() {
             return isBomb ? 1 : 0;
         }
@@ -21,16 +25,39 @@ public class GameField {
         public void setBomb() {
             isBomb = true;
         }
-
         public void reveal() {
             isHidden = false;
         }
-
         public void setBombCount(int surroundingBombs) {
             this.surroundingBombs = surroundingBombs;
         }
+        public void setMarked(boolean isMarked) {
+            this.isMarked = isMarked;
+        }
+        public boolean isEmptyTile() {
+            return !isBomb && surroundingBombs == 0;
+        }
+
+        public int getX() {
+            return x;
+        }
+
+        public int getY() {
+            return y;
+        }
+
+        public void setX(int x) {
+            this.x = x;
+        }
+
+        public void setY(int y) {
+            this.y = y;
+        }
 
         public String display() {
+            if (isMarked) {
+                return "M";
+            }
             if (isHidden) {
                 return "?";
             }
@@ -66,25 +93,26 @@ public class GameField {
             case HARD -> 0.45f;
         };
 
-        for(int x = 0; x < columns; x++) {
-            for(int y = 0; y < rows; y++) {
+        for(int y = 0; y < rows; y++) {
+            for(int x = 0; x < columns; x++) {
                 if (rng.nextFloat() <= diffMod) {
                     Tile bomb = new Tile();
                     bomb.setBomb();
-                    bomb.reveal();
-                    field[x+(y * rows)] = bomb;
+                    bomb.setX(x);
+                    bomb.setY(y);
+                    field[x+(y * columns)] = bomb;
                 } else {
                     Tile tile = new Tile();
-                    tile.reveal();
-                    field[x+(y * rows)] = tile;
+                    tile.setX(x);
+                    tile.setY(y);
+                    field[x+(y * columns)] = tile;
                 }
             }
         }
-
-        for(int x = 0; x < columns; x++) {
-            for(int y = 0; y < rows; y++) {
-                if (!field[x+(y * rows)].isBomb) {
-                    field[x+(y * rows)].setBombCount(getBombCountFor(x, y));
+        for(int y = 0; y < rows; y++) {
+            for(int x = 0; x < columns; x++) {
+                if (!field[x+(y * columns)].isBomb) {
+                    field[x+(y * columns)].setBombCount(getBombCountFor(x, y));
                 }
             }
         }
@@ -96,6 +124,49 @@ public class GameField {
                 countBomb(x+1, y-1) + countBomb(x+1, y+1);
     }
     private int countBomb(int x, int y) {
-        return (x < columns && x >= 0 && y < rows && y >= 0) ? field[(x + (y * rows))].hasBomb() : 0;
+        return (x < columns && x >= 0 && y < rows && y >= 0) ? field[(x + (y * columns))].hasBomb() : 0;
+    }
+
+    public boolean revealTile(int x,int y) {
+        Tile tile = field[x + (y * columns)];
+        tile.reveal();
+        if (tile.isEmptyTile()) {
+            revealAdjacentEmptyTiles(tile);
+        }
+        return tile.isBomb;
+    }
+
+    private void revealAdjacentEmptyTiles(Tile tile) {
+        for(int y = 0; y < rows; y++) {
+            for(int x = 0; x < columns; x++) {
+               if (field[ (tile.getX() + x) + ((tile.getY() + y) * columns)].isEmptyTile()) {
+                   field[ (tile.getX() + x) + ((tile.getY() + y) * columns)].reveal();
+               } else if (!field[ (tile.getX() + x) + ((tile.getY() + y) * columns)].isEmptyTile() && !field[ (tile.getX() + x) + ((tile.getY() + y) * columns)].isBomb) {
+                   field[ (tile.getX() + x) + ((tile.getY() + y) * columns)].reveal();
+               }
+            }
+        }
+    }
+
+    public void markTile(int x, int y) {
+        field[x + (y * columns)].setMarked(true);
+    }
+
+    public void unMarkTile(int x, int y) {
+        field[x + (y * columns)].setMarked(false);
+    }
+
+    public String getFieldAsString() {
+        StringBuilder builder = new StringBuilder();
+        for (int y = 0; y < columns; y++) {
+            builder.append(Arrays.toString(field)
+                    .replaceAll("\\[","")
+                    .replaceAll("]", "")
+                    .replaceAll(",", "")
+                    .replaceAll(" ", "")
+                    .substring(y*columns, (y*columns)+columns))
+                    .append("\n");
+        }
+        return builder.toString();
     }
 }
