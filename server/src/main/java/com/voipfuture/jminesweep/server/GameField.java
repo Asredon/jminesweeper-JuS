@@ -88,9 +88,9 @@ public class GameField {
         Random rng = new Random();
 
         float diffMod = switch (difficulty) {
-            case EASY -> 0.05f;
-            case MEDIUM -> 0.25f;
-            case HARD -> 0.45f;
+            case EASY -> 0.05f; // 5% bomb chance
+            case MEDIUM -> 0.25f; // 25% bomb chance
+            case HARD -> 0.45f; // 45% bomb chance
         };
 
         for(int y = 0; y < rows; y++) {
@@ -118,12 +118,18 @@ public class GameField {
         }
     }
     public int getBombCountFor(int x, int y) {
+        //  (x - 1) + (y - 1)    | x + (y - 1)  | (x + 1) + (y - 1)
+        //  _____________________|______________|___________________
+        //  (x - 1) + y          | x + y        | (x + 1) + y
+        //  _____________________|______________|___________________
+        //  (x - 1) + (y + 1)    | x + (y + 1)  | (x + 1) + (y + 1)
         return countBomb(x-1, y) + countBomb(x+1, y) +
                 countBomb(x, y-1) + countBomb(x, y+1) +
                 countBomb(x-1, y-1) + countBomb(x-1, y+1) +
                 countBomb(x+1, y-1) + countBomb(x+1, y+1);
     }
     private int countBomb(int x, int y) {
+        //check if tile exists first to avoid Array out of bounds
         return (x < columns && x >= 0 && y < rows && y >= 0) ? field[(x + (y * columns))].hasBomb() : 0;
     }
 
